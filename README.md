@@ -1,17 +1,13 @@
 # Brain Network Group Analysis & Visualization
 
-MATLAB code for the statistics and figure-generation stage of a brain
-network (graph-theory) analysis pipeline: comparing network metrics across
-clinical/demographic groups, modeling their relationship with age, and
+MATLAB code for the statistics and figure-generation stage of the Stochastic Actor-Oriented Models (SAOM) of brain networks analysis pipeline. Here comparing network metrics across clinical/demographic groups, modeling their relationship with age, and
 producing publication-style figures at both the individual-metric and
 whole-battery scale.
 
 ## What this does
 
-Given per-subject graph-theory metrics computed on functional (fMRI) and
-structural (DTI) brain networks — degree, betweenness, transitivity,
-assortativity, and related measures, each also computed within specific
-brain subnetworks — this script:
+Given results of the SAOM for functional (fMRI) and
+structural (DTI) time windows with particular factors and factor weights:
 
 - **Runs weighted statistical comparisons** between groups (diagnosis,
   sex, their interaction, and multi-level severity), using inverse-variance
