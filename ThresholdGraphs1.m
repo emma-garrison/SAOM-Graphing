@@ -1,4 +1,4 @@
-%%%%%%%%%%%%%%%%% IMPORT DATA %%%%%%%%%%%%%%%%%%%%
+%% STEP ONE %%%%%%%%%%%%%%% IMPORT DATA %%%%%%%%%%%%%%%%%%%%
 % This script is the statistics-and-visualization stage of a larger
 % pipeline. It expects a handful of preprocessed structures to already
 % exist in the MATLAB workspace before it is run:
@@ -8,94 +8,93 @@
 %             metric/subnetwork combination (e.g. "IFunctionalThresh...")
 %   Efields - fieldnames(Es), the list of metric/subnetwork combinations
 %             the main loop below iterates over
-% The earlier data-preparation stage that builds these from raw
-% connectome data, and the underlying participant dataset itself, are not
+% The earlier data-preparation stage that builds these from SAOM results 
+% and network analyses, and the underlying participant dataset itself, are not
 % included in this repository -- the dataset involves clinical/
 % neuroimaging data from human subjects and is not publicly shareable.
 % This repo exists to show the statistical-analysis and figure-generation
 % approach, not to be run end-to-end by someone without access to that
 % data.
-%% ===================== USER SETTINGS =====================
-% Which categories of subnetwork/dataset to process this run.
+
+%% STEP TWO %%%%%%%%%%%%%% USER SETTINGS %%%%%%%%%%%%%%%%%%%%
+% The toggles reflect the analysis setting that can be chosen. 
+% Turning them to false omits those particular analyses or graphs.
+
+% Saving Locations %
+% Where graphs and result tables get saved. Actual plot files land under
+% one of three subfolders (see resolveSavePath): "Individual Plots" and
+% "Grid Plots and Heat Maps" each further split into
+% <Functional|Structural>\<Subnet, blank for whole-brain>\; "Aggregate Plots"
+
+Settings.outputDir = "./Output/"; % relative to the working directory MATLAB is launched from
+
+% DATA TOGGLES %
 Settings.runFunctionalWholeBrain = true;
 Settings.runFunctionalSubnets    = true;
 Settings.runStructuralWholeBrain = true;
 Settings.runStructuralSubnets    = true;
 
+% OUTLIER SETTING %
 % isoutlier ThresholdFactor used when removing outliers from each subnetwork's data.
 Settings.outlierThreshold = 3;
 
-% Where graphs and result tables get saved. Actual plot files land under
-% one of three subfolders (see resolveSavePath): "Individual Plots" and
-% "Grid Plots and Heat Maps" each further split into
-% <Functional|Structural>\<Subnet, blank for whole-brain>\; "Aggregate
-% Plots" (true cross-scope summaries, e.g. Figure1/2/3a and the combined
-% Functional+Structural grids) has no subfolders.
-Settings.outputDir = "./Output/"; % relative to the working directory MATLAB is launched from
+% ANALYSIS TOGGLES %
 
-% Per-comparison toggles: fit the quadratic (age^2) model as well as linear,
-% and whether to produce the age-trend plot and/or the violin/box plot for
-% that comparison. Mu/Sigma results are always computed and saved -- they're
-% needed for the violin plots regardless, and cheap either way. doGridPlot
-% is separate from doViolinPlot: it controls the compact per-metric grid
-% (plotFactorViolinGrid) alongside the normal individual violin plots, off
-% by default except where noted so you can turn any of them on later
-% without re-deriving anything.
+% Disorder Comparisons 
 Settings.tests.Disorder.includeQuadratic  = false;
 Settings.tests.Disorder.doAgeTrendPlot    = true;
 Settings.tests.Disorder.doViolinPlot      = true;
 Settings.tests.Disorder.doGridPlot        = true;
 
-Settings.tests.Sex.includeQuadratic  = false;
-Settings.tests.Sex.doAgeTrendPlot    = true;
-Settings.tests.Sex.doViolinPlot      = true;
-Settings.tests.Sex.doGridPlot        = true;
-
-Settings.tests.SexxDisorder.includeQuadratic  = false;
-Settings.tests.SexxDisorder.doAgeTrendPlot    = true;
-Settings.tests.SexxDisorder.doViolinPlot      = true;
-Settings.tests.SexxDisorder.doGridPlot        = true;
-
+% MCI/Control Comparisons
 Settings.tests.MCI.includeQuadratic  = false;
 Settings.tests.MCI.doAgeTrendPlot    = true;
 Settings.tests.MCI.doViolinPlot      = true;
-Settings.tests.MCI.doGridPlot        = true; % added 2026-09-04 -- was missing while Disorder/Sex/SexxDisorder already had it
+Settings.tests.MCI.doGridPlot        = true; 
 
+%AD/Control Comparisons
 Settings.tests.AD.includeQuadratic  = false;
 Settings.tests.AD.doAgeTrendPlot    = true;
 Settings.tests.AD.doViolinPlot      = true;
 Settings.tests.AD.doGridPlot        = true; % added 2026-09-04 -- was missing while Disorder/Sex/SexxDisorder already had it
 
-Settings.tests.SexxDiagnosis.includeQuadratic  = false;
-Settings.tests.SexxDiagnosis.doAgeTrendPlot    = true;
-Settings.tests.SexxDiagnosis.doViolinPlot      = true;
-Settings.tests.SexxDiagnosis.doGridPlot        = false; % off for now -- easy to flip on later
+% Sex Comparisons
+Settings.tests.Sex.includeQuadratic  = false;
+Settings.tests.Sex.doAgeTrendPlot    = true;
+Settings.tests.Sex.doViolinPlot      = true;
+Settings.tests.Sex.doGridPlot        = true;
 
+%Sex and Disorder Anovas
+Settings.tests.SexxDisorder.includeQuadratic  = false;
+Settings.tests.SexxDisorder.doAgeTrendPlot    = true;
+Settings.tests.SexxDisorder.doViolinPlot      = true;
+Settings.tests.SexxDisorder.doGridPlot        = true;
+
+%Sex and MCI Anovas
+Settings.tests.SexxMCI.includeQuadratic  = false;
+Settings.tests.SexxMCI.doAgeTrendPlot    = true;
+Settings.tests.SexxMCI.doViolinPlot      = true;
+Settings.tests.SexxMCI.doGridPlot        = false; 
+
+%Sex and AD Anovas
 Settings.tests.SexxAD.includeQuadratic  = false;
 Settings.tests.SexxAD.doAgeTrendPlot    = true;
 Settings.tests.SexxAD.doViolinPlot      = true;
-Settings.tests.SexxAD.doGridPlot        = false; % off for now -- easy to flip on later
+Settings.tests.SexxAD.doGridPlot        = false; 
 
-% Control vs MCI vs AD, three groups in one comparison (weighted one-way
-% ANOVA + the 3 pairwise weighted t-tests it implies). No age-trend variant.
+% Impairment Severity Anova
 Settings.tests.Severity.doViolinPlot    = true;
-Settings.tests.Severity.doGridPlot      = true; % added 2026-09-04 -- the grid call already existed but had no toggle guarding it
+Settings.tests.Severity.doGridPlot      = true; 
 
-% All Data with Age: linear fit of factor value on age alone, no group
-% split. Previously ungated (always ran regardless of any toggle).
-Settings.tests.Overall.doAgeTrendPlot   = true; % added 2026-09-04
+% Overall Age Analysis
+Settings.tests.Overall.doAgeTrendPlot   = true; 
 
-% Aggregate summary figures, built once at the end of the run from every
-% subnetwork's logged effects: the age-fit heatmap (Figures 1/2/3a were
-% retired 2026-09-04, superseded by the violin grids and this heatmap) plus
-% the Figure 3b headline-scatter candidate list (just console text).
-% mainFigures covers whole-brain Functional and Structural; subnetFigures
-% additionally builds the same set for every individual subnetwork -- off
-% by default until you've decided whether the subnetwork-level results are
-% worth presenting.
+% Aggregate Figures 
 Settings.aggregateFigures.mainFigures   = true;
 Settings.aggregateFigures.subnetFigures = true;
 Settings.aggregateFigures.numHeadlineScatters = 3; % how many Figure 3b candidates to flag
+
+% TOGGLE OVERRIDE %
 
 % Toggle overrides for resolveToggle(): exceptions only, most-specific
 % wins. Empty until Phase 1's toggle migration actually wires call sites
@@ -103,23 +102,17 @@ Settings.aggregateFigures.numHeadlineScatters = 3; % how many Figure 3b candidat
 % dotted-path/override convention. Field names use "_" in place of "."
 % (e.g. Settings.toggles.Individual_TTest_Impairment_Functional = true).
 Settings.toggles = struct();
-%% ===========================================================
 
-% Make sure the root output folder exists before anything tries to save
-% into it -- resolveSavePath creates its own nested subfolders as needed,
-% but the shared per-scope log file (opened directly under Settings.outputDir,
-% before any resolveSavePath call) needs this one to exist first.
 if ~isfolder(Settings.outputDir)
     mkdir(Settings.outputDir);
 end
 
 
+% GRAPHICAL SETTINGS %
 
-%%%%%%%%%%%%%%%%% GRAPHING SET UP %%%%%%%%%%%%%%%%%%%%
-
-% colors=struct('color',{[0, 0.4470, 0.7410],[0.8500 0.3250 0.0980],[0.9290 0.6940 0.1250],[0.4940 0.1840 0.5560],[0.4660 0.6740 0.1880],[0.3010 0.7450 0.9330],[0.6350 0.0780 0.1840],[0 0.5 0],[1 0 0],[0.25, 0.25, 0.25],[0.75, 0, 0.75],[0 1 0],[0.95 0.95 0],[0.85 0.74 0.94]});
-% markers=struct('marker',{'o','+','*','pentagram','x','square','diamond','<','>'});
-load("Graphing.mat") % color palettes/markers/group-code lookup arrays -- included in this repo, no subject data
+% Establishing some settings for the graphing including the names of the factors. 
+% Future work may expand or change this list of factors. 
+load("Graphing.mat") % color palettes/markers/group-code lookup arrays designed by me
 longnames2=[
             "Degree"   
             "Transitive Triads"
@@ -154,13 +147,12 @@ formulanames=[
 
 MetricNames=["Rate";longnames2]; % one name per column of V/VSAS/etc., in the same order
 
-
-% Thresholded Graphs
+% Subnetwork naming conventions
 SubnetLongNames=["VN","SMN","DAN","SN","LN","FPN","DMN"];
 
+% PULLING CORRECT DATA %
 
-%%%%%%%%%%%%%%%%% PULLING THRESHOLDED DATA %%%%%%%%%%%%%%%%%%%%
-
+% This script comes at the end of serveral analyses here called the thresholded data
 
 indeces=find(contains(Efields,'ThresholdedVS'));
 
@@ -170,8 +162,11 @@ indeces=[indeces(ismember(indeces,indeces1));indeces(~ismember(indeces,indeces1)
 
 num=1;
 
+% CREATING RESULTS FILES %
+
 % Accumulates one row per (subnetwork, comparison, group, metric) with its
 % weighted mean/SD, saved to a table at the end of the run.
+
 MuSigmaResults=table('Size',[0,7],'VariableTypes',{'string','string','string','string','double','double','double'}, ...
     'VariableNames',{'Subnetwork','Comparison','Group','Metric','Mu','Sigma','N'});
 
@@ -179,43 +174,28 @@ MuSigmaResults=table('Size',[0,7],'VariableTypes',{'string','string','string','s
 % or a per-group age slope) -- the data Figures 1/2/3a read from. 'Group' is
 % blank for a whole-comparison effect (e.g. the overall Impairment effect) and
 % named for a per-group effect (e.g. the CN group's own age slope).
+
 EffectsResults=table('Size',[0,12],'VariableTypes',{'string','string','string','string','string','double','double','double','double','double','double','string'}, ...
     'VariableNames',{'Subnetwork','Comparison','Term','Group','Metric','TStat','DF','Effect','CILow','CIHigh','PValue','Type'});
 
-% Phase A of the Data Cleaning/Tests/Graphing reorg (2026-09-05): one
-% cleaned per-scope table stashed here, field name = sanitized TitleName1
-% (matlab.lang.makeValidName, e.g. "Functional VN" -> "Functional_VN").
-% Purely additive for now -- nothing downstream reads from this yet, it
-% exists so its shape/values can be sanity-checked before Phase B (the
-% Tests rewrite) switches the per-comparison blocks over to reading from
-% it instead of VSAS/ESAS/DisoA/etc.
-Datasets=struct();
+% CREATING RESULTS STRUCTS %
 
-% Phase C (2026-09-05): one unified collector for every comparison's
-% per-scope GridData, replacing the 32 separate XGridDataFunctional/
-% XGridDataStructural/XGridDataBySubnetFunctional/XGridDataBySubnetStructural
-% stash variables (8 comparisons x 4 each). Field structure:
-% Results.(Comparison).(scopeField) = that scope's GridData cell array,
-% where scopeField is the same matlab.lang.makeValidName(TitleName1) key
-% Datasets uses -- so any scope (whole-brain or subnetwork) for any
-% comparison lives in one place, read back after the main loop by the
-% grid/combined/subnetwork-aggregate plotting calls.
+Datasets=struct();
 Results=struct();
 
-%% ===== DATA CLEANING =====
+%% STEP THREE %%%%%%%%%%%%%%% DATA CLEANING %%%%%%%%%%%%%%%%%%%%
 % For each threshold/subnetwork entry (one iteration per row of `indeces`),
 % resolve scope, load raw values, filter/align them across every downstream
 % array, and drop NaN/Inf/outlier/zero-error rows -- the shared numeric
 % inputs (VSAS/ESAS/Diso/Diag/Sex/Age/Years/ID) that every group-subsetting,
 % Mu/Sigma, and test step below is built from. The %% headers below mark
 % each sub-step for the editor's next/previous-section navigation.
+
 for i=indeces'
 
-    
-    
     %% Scope setup: Functional vs Structural, subnetwork name, output folder
 
-    %%%%%%%%%%%%%%%%% GRAPH NAMES %%%%%%%%%%%%%%%%%%%%
+    % GRAPH NAMES %
 
     F=strfind(Efields{i},"fMRI");
     D=strfind(Efields{i},"DTI");
@@ -230,22 +210,10 @@ for i=indeces'
         notskip=false;
     end
 
-    % F=strfind(Efields{l},"fMRI");
-    % D=strfind(Efields{l},"DTI");
-    % notskip=true;
-    % if ~isempty(F)
-    %     set2="fMRI";
-    %     SetName2="Functional";
-    % elseif ~isempty(D)
-    %     set2="DTI";
-    %     SetName2="Structural";
-    % else
-    %     notskip=false;
-    % end
-
 
     if notskip
 
+        % SUBNET SETTINGS %
         Subnetname=Efields{i}((strfind(Efields{i}(1:(strfind(Efields{i},"Thresh")-1)),"I")+1):(strfind(Efields{i},"Thresh")-1));
         
 
@@ -257,7 +225,26 @@ for i=indeces'
             TitleName1=strcat(SetName," ",SubnetName);
         end
 
-        %%%%%%%%%%%%%%%%% WHICH TESTS %%%%%%%%%%%%%%%%%%%%
+         % NODE SETTINGS %
+        
+        if ~isempty(Subnetname)
+            Nodes=FSsizes(find(FSnames==Subnetname));
+        else
+            Nodes=100;
+        end
+
+        % FACTORS INFORMATION %
+
+        eval(strcat("AllFactors=AW(1).",Efields{i}(1:(strfind(Efields{i},"Thresh")-1)),"AllFactors;"))
+        
+
+        if contains(TitleName1,"Structural")
+            coe="S";
+        else
+            coe="F";
+        end
+        
+        % DETERMINING TESTS TO RUN %
 
         % Skip this entry entirely if its category is switched off in Settings
         IsWholeBrain=isempty(Subnetname);
@@ -275,20 +262,14 @@ for i=indeces'
             continue
         end
 
-        if ~isempty(Subnetname)
-            Nodes=FSsizes(find(FSnames==Subnetname));
-        else
-            Nodes=100;
-        end
-
-        %%%%%%%%%%%%%%%%% TEST RESULT FILE %%%%%%%%%%%%%%%%%%%%
+       
+        % TEST RESULT FILE %
 
         fid = fopen( strcat(Settings.outputDir,TitleName1,".txt"), 'wt' );
            
-
         %% Load raw factor values (rate + theta) for this threshold entry
 
-        %%%%%%%%%%%%%%%%% JUST THRESHOLDED DATA %%%%%%%%%%%%%%%%%%%%
+        % JUST THRESHOLDED DATA %
 
         eval(strcat("ThisRate1=As(1).",Efields{i}(1:(strfind(Efields{i},"Thresh")-1)),set1,"Thresh","Rate';"))
         eval(strcat("ThisTheta1=Es(1).",Efields{i},"';"));
@@ -299,28 +280,21 @@ for i=indeces'
         % new sample-size diagnostic (Datasets.(scope).nBefore/.nAfter).
         nBeforeCleaning=length(ThisRateES1);
 
-        %% Filter to rows with a valid (non-NaN) Rate error
-
-        %%%%%%%%%%%%%%%%% REMOVE NA %%%%%%%%%%%%%%%%%%%%
-
-        ThisRateS=ThisRate1(~isnan(ThisRateES1));
-        ThisThetaS=ThisTheta1(~isnan(ThisRateES1),:);
-        ThisThetaESS=ThisThetaES1(~isnan(ThisRateES1),:);
-
         
-
-        %% Load and align demographic/outcome variables (Diso, Diag, Sex, Age, Years, ID)
-
-        %%%%%%%%%%%%%%%%% DEMOGRAPHIC VARIABLES %%%%%%%%%%%%%%%%%%%%
-
+        % DEMOGRAPHIC VARIABLES %
+        
         DisoO=nanmean([[AW.CDRSB1];[AW.CDRSB2]])>=0.5;
         DiagO=((nanmean([[AW.CDRSB1];[AW.CDRSB2]])>=0.5)+(nanmean([[AW.CDRSB1];[AW.CDRSB2]])>=4));
         eval(strcat("SexO=Bs(1).Sex;"));
         eval(strcat("AgeO=As(1).Age2;"));
         eval(strcat("YearsO=As(1).Years;"));
         eval(strcat("IDO={AW.ID_subject};"))
+        
+        % REMOVE NA %
 
-        %%%%%%%%%%%%%%%%% REMOVE NA AGAIN %%%%%%%%%%%%%%%%%%%%
+        ThisRateS=ThisRate1(~isnan(ThisRateES1));
+        ThisThetaS=ThisTheta1(~isnan(ThisRateES1),:);
+        ThisThetaESS=ThisThetaES1(~isnan(ThisRateES1),:);
 
         Diso=DisoO(~isnan(ThisRateES1));
         Diag=DiagO(~isnan(ThisRateES1));
@@ -330,23 +304,20 @@ for i=indeces'
         ID=IDO(~isnan(ThisRateES1));
         ThisRateESS=ThisRateES1(~isnan(ThisRateES1));
 
-
-        %% Build VSS/ESS value+error vectors and scale Rate by Years
-        
-        %%%%%%%%%%%%%%%%% CREATE VS and ES %%%%%%%%%%%%%%%%%%%%
+        % CREATE VALUE AND ERROR ARRAYS %
 
         VSS=[ThisRateS,ThisThetaS];
         ESS=[ThisRateESS,ThisThetaESS];
 
-        %%%%%%%%%%%%%%%%% CORRECT RATE FOR YEARS %%%%%%%%%%%%%%%%%%%%
+        % CORRECT RATE FOR YEARS %
 
         VSS(:,1)=VSS(:,1).*Years';
         ESS(:,1)=ESS(:,1).*Years';
         
-        %% Drop rows with NaN in VSS/ESS
+        % REMOVE ANY NA/INF AFTER YEARS CORRECTION %
 
-        %%%%%%%%%%%%%%%%% REMOVE ANY NA AFTER YEARS CORRECTION %%%%%%%%%%%%%%%%%%%%
-
+        %If the years between is 0 then we will end up with infinitities
+        
         These=(any(isnan(VSS'))+any(isnan(ESS')))>0;
         VSS(These,:)=[];
         ESS(These,:)=[];
@@ -357,16 +328,6 @@ for i=indeces'
         Years(These)=[];
         ID(These)=[];
 
-
-        %%%%%%%%%%%%%%%%% PULL ALL FACTORS INFORMATION %%%%%%%%%%%%%%%%%%%%
-
-        eval(strcat("AllFactors=AW(1).",Efields{i}(1:(strfind(Efields{i},"Thresh")-1)),"AllFactors;"))
-
-
-        %% Drop rows with Inf in VSS
-
-        %%%%%%%%%%%%%%%%% REMOVE ANY INF AFTER YEARS CORRECTION %%%%%%%%%%%%%%%%%%%%
-
         Diso(find(any(isinf(VSS),2))) = [];
         Diag(find(any(isinf(VSS),2))) = [];
         Sex(find(any(isinf(VSS),2))) = [];
@@ -376,12 +337,9 @@ for i=indeces'
 
         ESS(any(isinf(VSS),2),:) = [];
         VSS(any(isinf(VSS),2),:) = [];
+        
 
-
-        %% Remove outliers (isoutlier on rate/theta/errors)
-        %REMOVE OUTLIERS
-
-        %%%%%%%%%%%%%%%%% OUTLIER REMOVAL %%%%%%%%%%%%%%%%%%%%
+        % OUTLIER REMOVAL %
 
         NotOutlier=~any(isoutlier([VSS(:,1),log(VSS(:,1)),VSS(:,(2:end)),ESS(:,1),ESS(:,(2:end))],ThresholdFactor=Settings.outlierThreshold),2);
         DisoA=Diso(NotOutlier);
@@ -393,23 +351,8 @@ for i=indeces'
         ESAS=ESS(NotOutlier,:);
         VSAS=VSS(NotOutlier,:);
 
-        % Exclude only rows with an exact-zero error/uncertainty in EVERY
-        % factor -- a row with a zero error in just one metric column is
-        % NOT dropped here (2026-09-05, reverted after briefly trying
-        % any(...): a metric can be a legitimate structural placeholder
-        % (value=0, error=0 for literally every subject in a scope, e.g.
-        % a metric that only applies to Functional data), and any(...)
-        % would then flag EVERY row in that whole scope, wiping out every
-        % other metric's perfectly good data too. Per-metric zero-error
-        % handling now happens where each test computes its own Weights,
-        % via inverseVarianceWeights (maps a zero error to NaN, which
-        % fitlme/fitlm already exclude per-observation -- confirmed with
-        % user), so this row-level check only needs to catch the
-        % genuinely unusable case where a row has no error information at
-        % all.
-        %% Remove rows with exact-zero error (would produce infinite fit weight)\
 
-        %%%%%%%%%%%%%%%%% REMOVE ANYTHING WITH NO ERROR %%%%%%%%%%%%%%%%%%%%
+        % REMOVE ANYTHING WITH NO ERROR %
 
         ZeroErr=all(ESAS==0,2);
         DisoA(ZeroErr)=[];
@@ -421,16 +364,14 @@ for i=indeces'
         VSAS(ZeroErr,:)=[];
         ESAS(ZeroErr,:)=[];
 
-        % ===== Phase A addition (2026-09-05): assemble this scope's
-        % cleaned data into one canonical table and stash it in Datasets,
-        % keyed by a sanitized TitleName1. Purely additive -- VSAS/ESAS/
-        % DisoA/etc. below are untouched and still drive every existing
-        % test/plot; nothing reads from Datasets yet.
+        % DATA TABLE %
+        
         T=table(IDA(:),AgeA(:),YearsA(:),SexA(:),DisoA(:),DiagA(:), ...
             'VariableNames',{'ID','Age','Years','Sex','Disorder','Diagnosis'});
         T.Value=VSAS;
         T.Error=ESAS;
 
+        % CALCULATE MU AND SIGMA
         [MuOverall,SigmaOverall]=weightedMuSigma(VSAS,ESAS);
 
         scopeField=matlab.lang.makeValidName(TitleName1);
@@ -439,93 +380,75 @@ for i=indeces'
             'Nodes',Nodes,'SubnetName',SubnetName,'SetName',SetName, ...
             'nBefore',nBeforeCleaning,'nAfter',size(VSAS,1));
 
-        %%%%%%%%%%%%%%%%% CREATE HISTOGRAMS %%%%%%%%%%%%%%%%%%%%
+        % HISTOGRAMS %
+        
+        % raw vs. outlier-removed distribution per metric
+        
+        for f=1:size(VSAS,2)
+            if ~all(VSAS(:,f)==0)
+                fig=figure;
+                fig.Visible='off';
+                set(gca, 'box', 'off');
+                subplot(1,2,1)
+                hold on
+                histfit(VSS(:,f))
+                histogram(ESS(:,f))
+                title("Original Distribution")
+                subplot(1,2,2)
+                hold on
+                histfit(VSAS(:,f))
+                histogram(ESAS(:,f))
+                title("Original Distribution Remove Outliers")
 
-        %HISTOGRAMS -- FLAGGED for review (2026-09-04): data-cleaning QC plot
-        %(raw vs. outlier-removed distribution per metric), not part of the
-        %Test/Plot taxonomy at all. Commented out pending the data-cleaning
-        %section-off; re-enable or relocate once that's settled.
-        % for f=1:size(VSAS,2)
-        %     if ~all(VSAS(:,f)==0)
-        %         fig=figure;
-        %         fig.Visible='off';
-        %         set(gca, 'box', 'off');
-        %         subplot(1,2,1)
-        %         hold on
-        %         histfit(VSS(:,f))
-        %         histogram(ESS(:,f))
-        %         title("Original Distribution")
-        %         subplot(1,2,2)
-        %         hold on
-        %         histfit(VSAS(:,f))
-        %         histogram(ESAS(:,f))
-        %         title("Original Distribution Remove Outliers")
-        %
-        %         if contains(TitleName1,"Structural")
-        %             coe="S";
-        %         else
-        %             coe="F";
-        %         end
-        %
-        %         if f==1
-        %             callit=strcat(TitleName1,"/","Rate","_Histograms");
-        %             sgtitle(strcat(coe,"_\rho"))
-        %         else
-        %             callit=strcat(TitleName1,"/",longnames2{f-1},"_Histograms");
-        %             sgtitle(strcat(coe,formulanames(f-1)))
-        %         end
-        %         set(gca, 'box', 'off');
-        %         saveas(fig,strcat(Settings.outputDir,callit,".png"))
-        %     end
-        % end
+                if f==1
+                    callit=strcat(TitleName1,"/","Rate","_Histograms");
+                    sgtitle(strcat(coe,"_\rho"))
+                else
+                    callit=strcat(TitleName1,"/",longnames2{f-1},"_Histograms");
+                    sgtitle(strcat(coe,formulanames(f-1)))
+                end
+                set(gca, 'box', 'off');
+                saveas(fig,strcat(Settings.outputDir,callit,".png"))
+            end
+        end
 
-        % %HISTOGRAMS
-        % for f=1:size(VSAS,2)
-        %     if ~all(VSAS(:,f)==0) || ~all(VSAF(:,f)==0)
-        %         fig=figure;
-        %         fig.Visible='on';
-        %         subplot(2,2,1)
-        %         histfit(VSS(:,f))
-        %         title("Structural Distribution")
-        %         subplot(2,2,2)
-        %         histfit(VSAS(:,f))
-        %         title("Structural Distribution Remove Outliers")
-        %         subplot(2,2,3)
-        %         histfit(VSF(:,f))
-        %         title("Functional Distribution")
-        %         subplot(2,2,4)
-        %         histfit(VSAF(:,f))
-        %         title("Functional Distribution Remove Outliers")
-        % 
-        %         if f==1
-        %             callit=strcat(TitleName,"/",Subnetname"/","Rate","_Histograms");
-        %             sgtitle(strcat(TitleName," ","Rate"))
-        %         else
-        %             callit=strcat(TitleName,"/",Subnetname"/",longnames2{f-1},"_Histograms");
-        %             sgtitle(strcat(TitleName," ",longnames2(f-1)))
-        %         end
-        %         % saveas(fig,strcat(Settings.outputDir,callit,".png"))
-        %     end
-        % end
+        for f=1:size(VSAS,2)
+            if ~all(VSAS(:,f)==0) || ~all(VSAF(:,f)==0)
+                fig=figure;
+                fig.Visible='on';
+                subplot(2,2,1)
+                histfit(VSS(:,f))
+                title("Structural Distribution")
+                subplot(2,2,2)
+                histfit(VSAS(:,f))
+                title("Structural Distribution Remove Outliers")
+                subplot(2,2,3)
+                histfit(VSF(:,f))
+                title("Functional Distribution")
+                subplot(2,2,4)
+                histfit(VSAF(:,f))
+                title("Functional Distribution Remove Outliers")
+         
+                if f==1
+                    callit=strcat(TitleName,"/",Subnetname"/","Rate","_Histograms");
+                    sgtitle(strcat(TitleName," ","Rate"))
+                else
+                    callit=strcat(TitleName,"/",Subnetname"/",longnames2{f-1},"_Histograms");
+                    sgtitle(strcat(TitleName," ",longnames2(f-1)))
+                end
+                saveas(fig,strcat(Settings.outputDir,callit,".png"))
+            end
+        end
 
         
-        
-        %% ===== GROUP SUBSETTING =====
+
+        %%%%%%%%%%%%%%%%% ESTABLISH SUBGROUPS %%%%%%%%%%%%%%%%%%%%
         % Every comparison group used below, sliced from the same 7 cleaned
         % per-subject arrays (VSAS/ESAS/YearsA/IDA/AgeA/SexA/DisoA) by a
         % logical mask via subsetGroup -- see that function for why this
         % used to be 7 hand-written lines per group.
 
-        %%%%%%%%%%%%%%%%% MORE GRAPH TITLE INFORMATION %%%%%%%%%%%%%%%%%%%%
-
-        if contains(TitleName1,"Structural")
-            coe="S";
-        else
-            coe="F";
-        end
-
-        %%%%%%%%%%%%%%%%% ESTABLISH SUBGROUPS %%%%%%%%%%%%%%%%%%%%
-
+        
         %Control
         [VSS0,ESS0,Years0,ID0,Age0,Sex0,Diso0]=subsetGroup(VSAS,ESAS,YearsA,IDA,AgeA,SexA,DisoA,DisoA==0);
         %Diagnosis
@@ -563,18 +486,7 @@ for i=indeces'
 
         %%%%%%%%%%%%%%%%% MU AND SIGMA CALCULATION %%%%%%%%%%%%%%%%%%%%
 
-
         [MuSigmaResults,MuA,SigmaA]=computeGroupMuSigma(VSAS,ESAS,TitleName1,"Overall","All",MetricNames,MuSigmaResults,"A",Efields,i,fid,"Overall Mu and Sigma");
-
-        %% ===== MU/SIGMA (weighted mean/SE), every group, all in one place =====
-        % Moved here (2026-09-04) from scattered inline positions right
-        % before whichever test first needed each group -- every group's
-        % weighted mean/SE is now computed once, right after the group
-        % subsetting above (VSS0-VSS16) that all of them read from, instead
-        % of interleaved with the test/plot logic that consumes them
-        % further down. Purely a relocation: each block's own computation
-        % is unchanged from its original form, quirks (a few blocks don't
-        % print a log line, a couple don't set TitleName) included.
 
         [MuSigmaResults,Mu0,Sigma0]=computeGroupMuSigma(VSS0,ESS0,TitleName1,"Disorder","Control",MetricNames,MuSigmaResults,"0",Efields,i,fid,"Control Mu and Sigma");
         [MuSigmaResults,Mu1,Sigma1]=computeGroupMuSigma(VSS1,ESS1,TitleName1,"Disorder","Diagnosed",MetricNames,MuSigmaResults,"1",Efields,i,fid,"Impaired Mu and Sigma");
@@ -591,12 +503,9 @@ for i=indeces'
         [MuSigmaResults,Mu12,Sigma12]=computeGroupMuSigma(VSS12,ESS12,TitleName1,"SexxDiagnosis","MaleMCI",MetricNames,MuSigmaResults,"12",Efields,i,fid,"Male Mild Impairment Mu and Sigma");
         [MuSigmaResults,Mu13,Sigma13]=computeGroupMuSigma(VSS13,ESS13,TitleName1,"SexxDiagnosis","FemaleControl",MetricNames,MuSigmaResults,"13",Efields,i,fid,""); % shared Control for MCI/AD -- original never logged this one
         [MuSigmaResults,Mu14,Sigma14]=computeGroupMuSigma(VSS14,ESS14,TitleName1,"SexxDiagnosis","FemaleMCI",MetricNames,MuSigmaResults,"14",Efields,i,fid,"Female Mild Impairment Mu and Sigma");
-        % Male AD / Female AD (Sex x AD comparison; the Control groups reuse
-        % Mu11/Sigma11 and Mu13/Sigma13 from the MCI comparison above).
         [MuSigmaResults,Mu15,Sigma15]=computeGroupMuSigma(VSS15,ESS15,TitleName1,"SexxAD","MaleAD",MetricNames,MuSigmaResults,"15",Efields,i,fid,"");
         [MuSigmaResults,Mu16,Sigma16]=computeGroupMuSigma(VSS16,ESS16,TitleName1,"SexxAD","FemaleAD",MetricNames,MuSigmaResults,"16",Efields,i,fid,"");
 
-        %% ===== end of consolidated Mu/Sigma section =====
 
         %OVERALL WITH AGE
         if Settings.tests.Overall.doAgeTrendPlot
@@ -1496,7 +1405,7 @@ for i=indeces'
                 cfg=struct();
                 cfg.formulaLinear="FactorWeight ~ Impairment+Sex+AgeCentered+Sex:AgeCentered+Impairment:AgeCentered+Impairment:Sex:AgeCentered + (1|ID)";
                 cfg.formulaQuadratic="FactorWeight ~ Impairment+Sex+AgeCentered^2+Sex:AgeCentered+Impairment:AgeCentered+Impairment:Sex:AgeCentered + (1|ID)";
-                cfg.includeQuadratic=Settings.tests.SexxDiagnosis.includeQuadratic;
+                cfg.includeQuadratic=Settings.tests.SexxMCI.includeQuadratic;
                 cfg.useMixedEffects=true;
                 cfg.groupLevels=["MCN","MMCI","FCN","FMCI"];
                 cfg.mainEffects=struct('pattern',{'^Impairment_[^:]+$','^Sex_[^:]+$','^AgeCentered(\^2)?$','^Sex_[^:]+:AgeCentered$'}, ...
@@ -1517,7 +1426,7 @@ for i=indeces'
                 end
                 cfg.saveFile=resolveSavePath(Settings.outputDir,"Individual Plots",callit);
 
-                cfg.drawPlot=Settings.tests.SexxDiagnosis.doAgeTrendPlot;
+                cfg.drawPlot=Settings.tests.SexxMCI.doAgeTrendPlot;
                 Effects=plotAgeTrendByGroup(tbl,cfg);
                 for e=1:height(Effects)
                     EffectsResults=appendEffectRow(EffectsResults,TitleName1,"SexxDiagnosis",Effects.Term(e),Effects.GroupName(e),MetricNames(fac),Effects.TStat(e),Effects.DF(e),Effects.PValue(e),Effects.Type(e));
@@ -1600,7 +1509,7 @@ for i=indeces'
                 SexxDiagnosisGridData{fac}=struct('values',{{V0,V1,V2,V3}},'mu',[Mu11(fac),Mu12(fac),Mu13(fac),Mu14(fac)], ...
                     'sigma',[Sigma11(fac),Sigma12(fac),Sigma13(fac),Sigma14(fac)],'comparisons',comparisons,'overallEffects',cfg.overallEffects); % 2026-09-05, user request: carries the sig box through to the grid/aggregate plots
 
-                cfg.drawPlot=Settings.tests.SexxDiagnosis.doViolinPlot;
+                cfg.drawPlot=Settings.tests.SexxMCI.doViolinPlot;
                 Effects=plotGroupViolin({V0,V1,V2,V3},[Mu11(fac),Mu12(fac),Mu13(fac),Mu14(fac)],[Sigma11(fac),Sigma12(fac),Sigma13(fac),Sigma14(fac)],comparisons,cfg);
                 for e=1:height(Effects)
                     EffectsResults=appendEffectRow(EffectsResults,TitleName1,"SexxDiagnosis",Effects.Term(e),Effects.GroupName(e),MetricNames(fac),Effects.TStat(e),Effects.DF(e),Effects.PValue(e),Effects.Type(e));
