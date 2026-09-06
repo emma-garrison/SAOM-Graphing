@@ -412,33 +412,43 @@ for i=indeces'
             end
         end
 
-        for f=1:size(VSAS,2)
-            if ~all(VSAS(:,f)==0) || ~all(VSAF(:,f)==0)
-                fig=figure;
-                fig.Visible='on';
-                subplot(2,2,1)
-                histfit(VSS(:,f))
-                title("Structural Distribution")
-                subplot(2,2,2)
-                histfit(VSAS(:,f))
-                title("Structural Distribution Remove Outliers")
-                subplot(2,2,3)
-                histfit(VSF(:,f))
-                title("Functional Distribution")
-                subplot(2,2,4)
-                histfit(VSAF(:,f))
-                title("Functional Distribution Remove Outliers")
-         
-                if f==1
-                    callit=strcat(TitleName,"/",Subnetname"/","Rate","_Histograms");
-                    sgtitle(strcat(TitleName," ","Rate"))
-                else
-                    callit=strcat(TitleName,"/",Subnetname"/",longnames2{f-1},"_Histograms");
-                    sgtitle(strcat(TitleName," ",longnames2(f-1)))
-                end
-                saveas(fig,strcat(Settings.outputDir,callit,".png"))
-            end
-        end
+        % Side-by-side Functional-vs-Structural histogram (2026-09-06,
+        % deferred): commented out until the Tests/Graphing reorg is
+        % actually finished. This loop only ever runs with ONE modality's
+        % data in scope (VSAS is whichever of Functional/Structural
+        % Efields{i} currently is) -- VSAF/VSF/TitleName below were never
+        % defined at this point, so as written this can't run. Once the
+        % reorg gives us a point in the script where both modalities'
+        % cleaned data exist together (the originally-planned Graphing
+        % section), this belongs there instead, comparing that scope's
+        % Datasets.(Functional...) and Datasets.(Structural...) tables.
+        % for f=1:size(VSAS,2)
+        %     if ~all(VSAS(:,f)==0) || ~all(VSAF(:,f)==0)
+        %         fig=figure;
+        %         fig.Visible='on';
+        %         subplot(2,2,1)
+        %         histfit(VSS(:,f))
+        %         title("Structural Distribution")
+        %         subplot(2,2,2)
+        %         histfit(VSAS(:,f))
+        %         title("Structural Distribution Remove Outliers")
+        %         subplot(2,2,3)
+        %         histfit(VSF(:,f))
+        %         title("Functional Distribution")
+        %         subplot(2,2,4)
+        %         histfit(VSAF(:,f))
+        %         title("Functional Distribution Remove Outliers")
+        %
+        %         if f==1
+        %             callit=strcat(TitleName,"/",Subnetname,"/","Rate","_Histograms");
+        %             sgtitle(strcat(TitleName," ","Rate"))
+        %         else
+        %             callit=strcat(TitleName,"/",Subnetname,"/",longnames2{f-1},"_Histograms");
+        %             sgtitle(strcat(TitleName," ",longnames2(f-1)))
+        %         end
+        %         saveas(fig,strcat(Settings.outputDir,callit,".png"))
+        %     end
+        % end
 
         
 
@@ -499,10 +509,10 @@ for i=indeces'
         [MuSigmaResults,Mu8,Sigma8]=computeGroupMuSigma(VSS8,ESS8,TitleName1,"Diagnosis","Control",MetricNames,MuSigmaResults,"8",Efields,i,fid,""); % shared Control for MCI/AD -- original never logged this one
         [MuSigmaResults,Mu9,Sigma9]=computeGroupMuSigma(VSS9,ESS9,TitleName1,"Diagnosis","MCI",MetricNames,MuSigmaResults,"9",Efields,i,fid,"Mild Impairment Mu and Sigma");
         [MuSigmaResults,Mu10,Sigma10]=computeGroupMuSigma(VSS10,ESS10,TitleName1,"Diagnosis","AD",MetricNames,MuSigmaResults,"10",Efields,i,fid,"Significant Impairment Mu and Sigma");
-        [MuSigmaResults,Mu11,Sigma11]=computeGroupMuSigma(VSS11,ESS11,TitleName1,"SexxDiagnosis","MaleControl",MetricNames,MuSigmaResults,"11",Efields,i,fid,""); % shared Control for MCI/AD -- original never logged this one
-        [MuSigmaResults,Mu12,Sigma12]=computeGroupMuSigma(VSS12,ESS12,TitleName1,"SexxDiagnosis","MaleMCI",MetricNames,MuSigmaResults,"12",Efields,i,fid,"Male Mild Impairment Mu and Sigma");
-        [MuSigmaResults,Mu13,Sigma13]=computeGroupMuSigma(VSS13,ESS13,TitleName1,"SexxDiagnosis","FemaleControl",MetricNames,MuSigmaResults,"13",Efields,i,fid,""); % shared Control for MCI/AD -- original never logged this one
-        [MuSigmaResults,Mu14,Sigma14]=computeGroupMuSigma(VSS14,ESS14,TitleName1,"SexxDiagnosis","FemaleMCI",MetricNames,MuSigmaResults,"14",Efields,i,fid,"Female Mild Impairment Mu and Sigma");
+        [MuSigmaResults,Mu11,Sigma11]=computeGroupMuSigma(VSS11,ESS11,TitleName1,"SexxMCI","MaleControl",MetricNames,MuSigmaResults,"11",Efields,i,fid,""); % shared Control for MCI/AD -- original never logged this one
+        [MuSigmaResults,Mu12,Sigma12]=computeGroupMuSigma(VSS12,ESS12,TitleName1,"SexxMCI","MaleMCI",MetricNames,MuSigmaResults,"12",Efields,i,fid,"Male Mild Impairment Mu and Sigma");
+        [MuSigmaResults,Mu13,Sigma13]=computeGroupMuSigma(VSS13,ESS13,TitleName1,"SexxMCI","FemaleControl",MetricNames,MuSigmaResults,"13",Efields,i,fid,""); % shared Control for MCI/AD -- original never logged this one
+        [MuSigmaResults,Mu14,Sigma14]=computeGroupMuSigma(VSS14,ESS14,TitleName1,"SexxMCI","FemaleMCI",MetricNames,MuSigmaResults,"14",Efields,i,fid,"Female Mild Impairment Mu and Sigma");
         [MuSigmaResults,Mu15,Sigma15]=computeGroupMuSigma(VSS15,ESS15,TitleName1,"SexxAD","MaleAD",MetricNames,MuSigmaResults,"15",Efields,i,fid,"");
         [MuSigmaResults,Mu16,Sigma16]=computeGroupMuSigma(VSS16,ESS16,TitleName1,"SexxAD","FemaleAD",MetricNames,MuSigmaResults,"16",Efields,i,fid,"");
 
@@ -1429,7 +1439,7 @@ for i=indeces'
                 cfg.drawPlot=Settings.tests.SexxMCI.doAgeTrendPlot;
                 Effects=plotAgeTrendByGroup(tbl,cfg);
                 for e=1:height(Effects)
-                    EffectsResults=appendEffectRow(EffectsResults,TitleName1,"SexxDiagnosis",Effects.Term(e),Effects.GroupName(e),MetricNames(fac),Effects.TStat(e),Effects.DF(e),Effects.PValue(e),Effects.Type(e));
+                    EffectsResults=appendEffectRow(EffectsResults,TitleName1,"SexxMCI",Effects.Term(e),Effects.GroupName(e),MetricNames(fac),Effects.TStat(e),Effects.DF(e),Effects.PValue(e),Effects.Type(e));
                 end
 
             end
@@ -1451,7 +1461,7 @@ for i=indeces'
         Factor2AllSxDg=T.Diagnosis(maskAllSxDg);
         IDAllSxDg=T.ID(maskAllSxDg);
 
-        SexxDiagnosisGridData=cell(1,size(V,2));
+        SexxMCIGridData=cell(1,size(V,2));
         for fac=1:size(V,2)
             V0 = V(:,fac);
             V1 = Vv(:,fac);
@@ -1506,19 +1516,19 @@ for i=indeces'
                 end
                 cfg.saveFile=resolveSavePath(Settings.outputDir,"Individual Plots",callit);
 
-                SexxDiagnosisGridData{fac}=struct('values',{{V0,V1,V2,V3}},'mu',[Mu11(fac),Mu12(fac),Mu13(fac),Mu14(fac)], ...
+                SexxMCIGridData{fac}=struct('values',{{V0,V1,V2,V3}},'mu',[Mu11(fac),Mu12(fac),Mu13(fac),Mu14(fac)], ...
                     'sigma',[Sigma11(fac),Sigma12(fac),Sigma13(fac),Sigma14(fac)],'comparisons',comparisons,'overallEffects',cfg.overallEffects); % 2026-09-05, user request: carries the sig box through to the grid/aggregate plots
 
                 cfg.drawPlot=Settings.tests.SexxMCI.doViolinPlot;
                 Effects=plotGroupViolin({V0,V1,V2,V3},[Mu11(fac),Mu12(fac),Mu13(fac),Mu14(fac)],[Sigma11(fac),Sigma12(fac),Sigma13(fac),Sigma14(fac)],comparisons,cfg);
                 for e=1:height(Effects)
-                    EffectsResults=appendEffectRow(EffectsResults,TitleName1,"SexxDiagnosis",Effects.Term(e),Effects.GroupName(e),MetricNames(fac),Effects.TStat(e),Effects.DF(e),Effects.PValue(e),Effects.Type(e));
+                    EffectsResults=appendEffectRow(EffectsResults,TitleName1,"SexxMCI",Effects.Term(e),Effects.GroupName(e),MetricNames(fac),Effects.TStat(e),Effects.DF(e),Effects.PValue(e),Effects.Type(e));
                 end
             end
             end
         end
         % Stashed for the Graphing section (below the main loop).
-        Results.SexxDiagnosis.(scopeField)=SexxDiagnosisGridData;
+        Results.SexxMCI.(scopeField)=SexxMCIGridData;
 
         %DIAGNOSIS AND SEX WITH AGE (AD; Phase B, 2026-09-05: sourced
         % from T instead of VSAS/AgeA/SexA/DisoA/DiagA. Converted to
@@ -1695,9 +1705,9 @@ writetable(SampleSizeSummary, strcat(Settings.outputDir,"SampleSizeSummary.csv")
 % Per-scope grid plots, one comparison at a time, over every scope Results
 % has an entry for (whole-brain and subnetwork alike).
 comparisonGridSpecs=struct( ...
-    'name',{"Disorder","Sex","SexxDisorder","MCI","AD","Severity","SexxDiagnosis","SexxAD"}, ...
+    'name',{"Disorder","Sex","SexxDisorder","MCI","AD","Severity","SexxMCI","SexxAD"}, ...
     'groupLevels',{["CN","DS"],["M","F"],["MCN","MDS","FCN","FDS"],["CN","MCI"],["CN","AD"],["CN","MCI","AD"],["MCN","MMCI","FCN","FMCI"],["MCN","MAD","FCN","FAD"]}, ...
-    'saveName',{"ViolinGridTest_Disorder","ViolinGridTest_Sex","ViolinGridTest_SexxDisorder","ViolinGridTest_MCI","ViolinGridTest_AD","ViolinGridTest_Severity","ViolinGridTest_SexxDiagnosis","ViolinGridTest_SexxAD"}, ...
+    'saveName',{"ViolinGridTest_Disorder","ViolinGridTest_Sex","ViolinGridTest_SexxDisorder","ViolinGridTest_MCI","ViolinGridTest_AD","ViolinGridTest_Severity","ViolinGridTest_SexxMCI","ViolinGridTest_SexxAD"}, ...
     'titlePrefix',{"Disorder: Control vs Impaired","Sex: Male vs Female","Sex x Disorder","MCI: Control vs Mild Impairment","AD: Control vs Significant Impairment","Severity: Control vs MCI vs AD","Sex x MCI","Sex x AD"});
 for c=1:numel(comparisonGridSpecs)
     spec=comparisonGridSpecs(c);
@@ -1720,7 +1730,7 @@ for c=1:numel(comparisonGridSpecs)
     spec=comparisonGridSpecs(c);
     % 2026-09-05, toggle audit: this loop (and the subnetwork-aggregate one
     % below) used to ignore doGridPlot entirely, so a comparison turned off
-    % there (SexxDiagnosis/SexxAD) still got its Combined and
+    % there (SexxMCI/SexxAD) still got its Combined and
     % All-Subnetworks grids generated -- only the per-scope grid actually
     % respected the toggle. Guarding all three the same way makes
     % doGridPlot control everything it visually looks like it should.
@@ -1774,7 +1784,7 @@ writetable(EffectsResults, strcat(Settings.outputDir,"EffectsResults.csv"));
 %
 % % Figure 2 columns: the 3 sex x impairment codings, 3 effect types each.
 % Fig2Cols=struct( ...
-%     'Comparison',{"SexxDisorder","SexxDisorder","SexxDisorder","SexxDiagnosis","SexxDiagnosis","SexxDiagnosis","SexxAD","SexxAD","SexxAD"}, ...
+%     'Comparison',{"SexxDisorder","SexxDisorder","SexxDisorder","SexxMCI","SexxMCI","SexxMCI","SexxAD","SexxAD","SexxAD"}, ...
 %     'Term',{"Impairment","Sex","Interaction","Mild Impairment","Sex","Interaction","Significant Impairment","Sex","Interaction"}, ...
 %     'GroupName',{"","","","","","","","",""}, ...
 %     'Label',{"Disorder: Impairment","Disorder: Sex","Disorder: Interaction","MCI: Impairment","MCI: Sex","MCI: Interaction","AD: Impairment","AD: Sex","AD: Interaction"});
