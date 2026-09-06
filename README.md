@@ -81,7 +81,10 @@ This code was written over the course of my own graduate research,
 iterating on both the statistics and the figure design as the analysis
 needs evolved. I'm not a software engineer by training — this repository
 is here to show how I approach a real, messy, iterative data-analysis
-problem, not to present idealized textbook code.
+problem, not to present idealized textbook code. Claude code was used to 
+implement some graphical choices and to help upload this code to GitHub. 
+All analyses reflect my own scientific approaches, and all graphs reflect my 
+own design choices.
 
 ## License
 
